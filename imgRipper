@@ -1,0 +1,124 @@
+#!/bin/bash
+
+#set initial verbose flag to false
+verbose='false'
+
+#usage function
+print_usage() {
+	printf "Usage: imgRipper -f [FILENAME] -u [URL] -v\n"
+}
+
+#get flags
+while getopts 'f:u:v' flag; do
+	case "${flag}" in
+		f) file="${OPTARG}" ;;
+		u) url="${OPTARG}" ;;
+		v) verbose='true' ;;
+		*) print_usage
+			exit 1 ;;
+	esac
+done
+
+#if file doesnt exist, print error
+if [ ! -f $file ]; then
+	printf "File doesn't exist!\n"
+	print_usage
+	exit 1
+fi
+
+#if file is empty, try getting url. if url is empty, print usage
+if [[ $file == "" ]]; then
+	if [[ $url == "" ]]; then
+		print_usage
+		exit 1
+	fi
+
+	#download sitemap if no file given
+	echo 'Retrieving sitemap...'
+	if [[ $verbose == 'false' ]]; then
+		wget -q $url
+	else
+		wget $url
+	fi
+	echo 'Sitemap retrieved'
+fi
+
+echo 'Scraping sitemap...'
+
+#scrape sitemap
+str='<image:loc>'
+while read l; do
+	if [[ $l == $str* ]]; then
+		echo $l >> sitemapdata
+	fi
+done < sitemap.xml
+
+#remove xml tags
+sed -ine 's/<[^>]*>//g' sitemapdata
+
+#setup for progress bar
+num=$(wc -l < sitemapdata)
+let twentieth=$num/20
+
+#create imgs folder if doesnt exist
+if [ ! -d './imgs' ]; then
+	mkdir ./imgs
+fi
+
+echo 'Downloading images...'
+
+#create and print initial progress bar
+progBar=("." "." "." "." "." "." "." "." "." "." "." "." "." "." "." "." "." "." "." ".")
+for k in ${progBar[@]}; do
+	bar="${bar}${k}"
+done
+bar="(${bar})"
+percent=0
+echo -ne "$bar (0/$num) ($percent%) \r"
+
+i=1 #num of each line
+j=1 #multiplicative
+m=0 #array element
+
+#get each image and save it to imgs
+while read l; do
+	#create percentage
+	percent=$((100* $i/$num))
+
+	#check if current line num equals a twentieth*j of total lines
+	if [[ $i == $((twentieth*j)) ]]; then
+		progBar[$m]="#"
+
+		#create the progress bar to print
+		bar=""
+		for k in ${progBar[@]}; do
+			bar="${bar}${k}"
+		done
+		bar="(${bar})"
+
+		#print progress bar
+		echo -ne "$bar ($i/$num) ($percent%) \r"
+
+		((j++))
+		((m++))
+	fi
+	echo -ne "$bar ($i/$num) ($percent%) \r"
+	((i++))
+
+	if [[ $verbose == 'false' ]]; then
+		wget -q $l -P './imgs/'
+	else 
+		wget $l -P './imgs/'
+	fi
+	wait
+done < sitemapdata
+echo -ne '\n'
+
+#remove all sitemap files, but keep input sitemap if given
+if [[ $file == "" ]]; then
+	rm ./sitemap*
+else
+	rm ./sitemapdata sitemapdatane
+fi
+
+echo 'Done!'
