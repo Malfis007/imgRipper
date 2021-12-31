@@ -6,4 +6,4 @@ bash script to scrape sitemaps for urls and download images
 - pass either a sitemap file [-f] or a url to a sitemap [-u]
 
 ## todo
-- currently only looks for \<image:loc\> tags within current sitemap; would like to add ability to scrape for sitemaps if the current sitemap has links to other sitemaps instead of image location tags
+- add support for \<image:loc\> tags that point to other sitemaps
