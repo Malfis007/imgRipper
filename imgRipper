@@ -5,7 +5,7 @@ verbose='false'
 
 #usage function
 print_usage() {
-	printf "Usage: imgRipper -f [FILENAME] -u [URL] -v\n"
+	echo "Usage: imgRipper -f [FILENAME] -u [URL] -v\n"
 }
 
 #get flags
@@ -21,7 +21,7 @@ done
 
 #if file doesnt exist, print error
 if [ ! -f $file ]; then
-	printf "File doesn't exist!\n"
+	echo "File doesn't exist!\n"
 	print_usage
 	exit 1
 fi
