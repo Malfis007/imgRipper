@@ -26,7 +26,7 @@ if [ ! -f $file ]; then
 	exit 1
 fi
 
-#if file is empty, try getting url. if url is empty, print usage
+#if file var is empty, try getting url var. if url is empty, print usage
 if [[ $file == "" ]]; then
 	if [[ $url == "" ]]; then
 		print_usage
@@ -45,6 +45,8 @@ fi
 
 echo 'Scraping sitemap...'
 
+#check for sitemap location file
+
 #scrape sitemap
 str='<image:loc>'
 while read l; do
@@ -53,8 +55,68 @@ while read l; do
 	fi
 done < sitemap.xml
 
-#remove xml tags
-sed -ine 's/<[^>]*>//g' sitemapdata
+#exit if no images found
+if [ -f 'sitemapdata' ]; then
+	#remove xml tags
+	sed -ine 's/<[^>]*>//g' sitemapdata
+else
+	noImgs=true
+	echo 'No image locations were found in the given sitemap'
+	#echo 'Scraping for sitemap locations...'
+	rm ./sitemap.xml
+	echo 'Exiting'
+	exit 1
+fi
+
+#WIP
+#do this if no images were found
+#if [[ $noImgs == true ]]; then
+#	#scrape for sitemap locations
+#	locStr='<loc>'
+#	while read l; do
+#		if [[ $l == $locStr* ]]; then
+#			echo $l >> sitemapdata
+#		fi
+#	done < sitemap.xml
+#
+#	#remove xml tags
+#	if [ -f 'sitemapdata' ]; then
+#		sed -ine 's/<[^>]*>//g' sitemapdata
+#
+#		echo 'Retrieving sitemap(s)...'
+#
+#		#download sitemaps
+#		while read l; do
+#			if [[ $verbose == 'false' ]]; then
+#				wget -q $l
+#			else
+#				wget $l
+#			fi
+#		done < sitemapdata
+#
+#		#scrape image urls
+#		while read l; do
+#			if [[ $l == $str* ]]; then
+#				echo $str
+#				echo $l >> sitemapdata
+#			fi
+#		done < pages-sitemap.xml
+#
+#		#exit if no images found
+#		if [ -f 'sitemapdata' ]; then
+#			#remove xml tags
+#			sed -ine 's/<[^>]*>//g' sitemapdata
+#		else
+#			echo 'No image locations were found in the retrieved sitemap(s)'
+#			echo 'Exiting'
+#			exit 1
+#		fi
+#	else
+#		echo 'No sitemap locations were found'
+#		echo 'Exiting'
+#		exit 1
+#	fi
+#fi
 
 #setup for progress bar
 num=$(wc -l < sitemapdata)
@@ -80,7 +142,7 @@ i=1 #num of each line
 j=1 #multiplicative
 m=0 #array element
 
-#get each image and save it to imgs
+#get each image and save it to ./imgs
 while read l; do
 	#create percentage
 	percent=$((100* $i/$num))
